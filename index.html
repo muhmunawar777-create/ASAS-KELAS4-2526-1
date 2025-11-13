@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis PKn Kelas 4 SD - Assesmen Sumatif</title>
+    <!-- Memuat Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Tone.js untuk membuat bunyi peringatan -->
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+        }
+        .quiz-container {
+            max-width: 900px;
+        }
+        .question-card {
+            border-left: 5px solid #3b82f6;
+        }
+        .custom-control {
+            transform: scale(1.2);
+            margin-right: 0.5rem;
+        }
+        /* Custom font sizes for KOP */
+        .kop-text-14 { font-size: 1.125rem; } /* text-lg */
+        .kop-text-16 { font-size: 1.25rem; } /* text-xl */
+
+        /* Styling untuk Jam Digital Countdown */
+        #timerDisplay {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1d4ed8; /* Biru default */
+            transition: color 0.5s;
+        }
+        #timerDisplay.low-time {
+            color: #dc2626; /* Merah ketika waktu menipis */
+            animation: pulse-red 1s infinite;
+        }
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* CSS untuk mode cetak */
+        @media print {
+            /* Sembunyikan semua elemen yang tidak relevan saat dicetak */
+            header, #userInfo, #quizForm, .no-print, #timerContainer, #instructionSection, #rekapModal, #rekapButton {
+                display: none !important;
+            }
+            /* Pastikan hasil terlihat saat dicetak */
+            #resultsSection {
+                display: block !important;
+                box-shadow: none !important;
+                border: none !important;
+                margin-top: 0;
+            }
+            /* Hapus background card review saat mencetak */
+            #answerReview div {
+                background-color: white !important;
+                border: 1px solid #ccc !important;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10 p-6 bg-white rounded-xl shadow-lg no-print">
+            
+            <!-- KOP DENGAN UKURAN FONT SPESIFIK -->
+            <div class="space-y-1 font-bold text-gray-900">
+                <p class="text-lg">PEMERINTAH KABUPATEN TUBAN</p>
+                <p class="text-lg">DINAS PENDIDIKAN</p>
+                <p class="text-xl font-extrabold text-blue-800">UPT SD NEGERI PLUMPANG 3</p>
+            </div>
+
+            <!-- GARIS TEBAL PEMISAH KOP -->
+            <hr class="my-4 border-t-4 border-gray-800 mx-auto w-3/4">
+
+            <!-- JUDUL ASESMEN DAN TAHUN AJARAN -->
+            <h1 class="text-3xl font-extrabold text-blue-700 mt-6">Assesmen Sumatif Akhir Semester 1</h1>
+            <p class="text-gray-600 mt-2 font-bold">Tahun Ajaran 2025/2026</p>
+            <p class="text-gray-600 mt-1">Mata Pelajaran: Pendidikan Pancasila dan Kewarganegaraan</p>
+            
+            <!-- Tambahan Kelas IV dengan warna Orange -->
+            <p class="text-xl font-extrabold text-orange-500 mt-1">Kelas IV</p>
+
+            <!-- INPUT NAMA DAN NOMOR ABSEN/URUT -->
+            <div id="userInfo" class="mt-6 flex flex-col md:flex-row justify-center space-y-3 md:space-y-0 md:space-x-4">
+                <input type="text" id="studentName" placeholder="Masukkan Nama Siswa" class="p-2 border border-gray-300 rounded-lg w-full md:w-64 text-center focus:ring-blue-500 focus:border-blue-500">
+                <input type="number" id="absentNumber" placeholder="Nomor Absen/Urut" class="p-2 border border-gray-300 rounded-lg w-full md:w-40 text-center focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- BAGIAN PETUNJUK UMUM PENGERJAAN -->
+            <div id="instructionSection" class="mt-8 p-6 bg-yellow-50 rounded-xl shadow-inner border-2 border-yellow-300 text-left">
+                <h3 class="text-xl font-extrabold text-yellow-800 mb-3 text-center">Petunjuk Umum Pengerjaan</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700 font-medium">
+                    <li>Berdoa kepada Tuhan Yang Maha Esa sebelum memulai pengerjaan soal.</li>
+                    <li>Tuliskan **Nama Siswa** dan **Nomor Absen/Urut** Anda pada kolom di atas dengan benar.</li>
+                    <li>Bacalah setiap petunjuk dan soal dengan **cermat** dan teliti.</li>
+                    <li>Perhatikan batas waktu pengerjaan yang tersedia di sudut atas.</li>
+                    <li>Jawablah semua soal sesuai dengan petunjuk jenis soal (Pilih 1, Pilih 2, atau Benar/Salah).</li>
+                    <li>Dilarang bekerja sama, berbicara, atau mengganggu siswa lain selama ujian berlangsung.</li>
+                    <li>Periksa kembali semua jawaban Anda sebelum menekan tombol "Selesai & Cek Nilai".</li>
+                </ol>
+            </div>
+            
+            <!-- TOMBOL MULAI KUIS (Telah Diubah) -->
+            <div id="startQuizContainer" class="mt-8">
+                <button onclick="startQuiz()" class="px-8 py-4 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700 transition duration-300 transform hover:scale-105">
+                    MULAI MENGERJAKAN SOAL! (Waktu 90 Menit)
+                </button>
+            </div>
+
+            <!-- JAM DIGITAL HITUNG MUNDUR (SEMBUNYI SAAT START) -->
+            <div id="timerContainer" class="hidden mt-8 p-4 bg-blue-50 rounded-xl shadow-inner border border-blue-200">
+                <p class="text-base font-semibold text-gray-700">Waktu Pengerjaan Tersisa:</p>
+                <div id="timerDisplay" class="text-center font-mono">90:00</div>
+            </div>
+
+        </header>
+
+        <main id="quizForm" class="hidden bg-white p-6 rounded-xl shadow-lg space-y-6">
+            
+            <!-- PESAN PERINGATAN SOAL BELUM DIJAWAB -->
+            <div id="unansweredWarningDiv" class="hidden p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-lg font-bold">
+                <p>PERINGATAN: Terdapat soal yang belum Anda jawab. Silakan periksa kembali soal nomor:</p>
+                <p id="unansweredList" class="mt-2 font-extrabold"></p>
+            </div>
+
+            <!-- Soal akan dirender di sini oleh JavaScript -->
+            <div id="questionsContainer" class="space-y-8"></div>
+
+            <div class="text-center pt-8">
+                <button id="submitQuiz" onclick="submitQuiz()" class="px-8 py-3 bg-green-600 text-white font-bold rounded-xl shadow-md hover:bg-green-700 transition duration-300 transform hover:scale-105">
+                    Selesai & Cek Nilai
+                </button>
+            </div>
+        </main>
+
+        <section id="resultsSection" class="hidden bg-white p-8 rounded-xl shadow-xl mt-8">
+            <h2 class="text-3xl font-extrabold text-center text-blue-700 mb-6">Hasil Ujian</h2>
+            
+            <!-- UCAPAN SELAMAT / KETERANGAN WAKTU HABIS -->
+            <div id="resultMessage" class="text-center p-4 bg-lime-100 rounded-lg border-2 border-lime-300 mb-6">
+                 <p class="text-xl font-bold text-lime-700">Selamat Anda Telah Mengerjakan Soal Assesmen ini.</p>
+            </div>
+
+            <p class="text-center text-gray-700 mb-1">Nama Siswa: <span id="resultName" class="font-semibold text-indigo-600"></span></p>
+            <p class="text-center text-gray-700 mb-4">Nomor Absen: <span id="resultAbsent" class="font-semibold text-indigo-600"></span></p>
+            
+            <!-- Tambahan User ID untuk verifikasi guru -->
+            <p class="text-center text-xs text-gray-400 mb-4">User ID: <span id="resultUserId" class="font-mono text-gray-500 text-xs"></span></p>
+
+            <div class="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200 mb-8">
+                <p class="text-xl text-gray-700">Skor Total Anda:</p>
+                <p id="totalScoreDisplay" class="text-5xl font-extrabold text-red-600 mt-2"></p>
+                <p id="totalMaxScore" class="text-sm text-gray-500">Nilai Maksimum: 65 (50 Soal)</p>
+                <p id="finalGrade" class="text-2xl font-bold mt-3"></p>
+            </div>
+            
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4">Ulasan Jawaban</h3>
+            <div id="answerReview" class="space-y-4">
+                <!-- Ulasan jawaban akan dirender di sini -->
+            </div>
+
+            <!-- TOMBOL AKSI -->
+            <div class="mt-8 pt-4 border-t flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-4 no-print">
+                <button onclick="printResults()" class="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition duration-300 transform hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5 4v3H3v6h2v3h10v-3h2V7h-2V4h-3V2H8v2H5zm0 10v-4h10v4H5z"/>
+                    </svg>
+                    Cetak PDF Hasil
+                </button>
+                <button onclick="shareLink()" class="flex items-center justify-center px-6 py-3 bg-blue-500 text-white font-bold rounded-xl shadow-md hover:bg-blue-600 transition duration-300 transform hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.001 3.001 0 000-1.789l4.94-2.47A3 3 0 0015 8z"/>
+                    </svg>
+                    Kirim Link Soal
+                </button>
+                <button id="rekapButton" onclick="openScoreRekap()" class="flex items-center justify-center px-6 py-3 bg-green-600 text-white font-bold rounded-xl shadow-md hover:bg-green-700 transition duration-300 transform hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H5v-2h5v2zm4 0h-3v-2h3v2zm4 0h-3v-2h3v2zm-4-4H5v-2h5v2zm4 0h-3v-2h3v2zm4 0h-3v-2h3v2zm-4-4H5V7h5v2zm4 0h-3V7h3v2zm4 0h-3V7h3v2z"/></svg>
+                    Rekap Nilai Siswa
+                </button>
+            </div>
+        </section>
+
+        <!-- MODAL REKAP NILAI (TERSEMBUNYI SECARA DEFAULT) -->
+        <div id="rekapModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl max-w-4xl w-full h-5/6 flex flex-col">
+                <div class="flex justify-between items-center border-b pb-3 mb-4">
+                    <h2 class="text-2xl font-extrabold text-indigo-700">Rekapitulasi Nilai Seluruh Siswa</h2>
+                    <button onclick="document.getElementById('rekapModal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <div id="rekapDataInfo" class="text-sm text-gray-600 mb-3">Memuat data...</div>
+
+                <div class="flex-grow overflow-auto border rounded-lg p-2 mb-4">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No.</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Selesai</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. Absen</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skor (Maks 65)</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai (100)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rekapTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Data rekap akan dimasukkan di sini -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-end pt-3">
+                    <button id="exportCsvButton" onclick="exportToCSV()" class="px-6 py-2 bg-teal-600 text-white font-bold rounded-lg shadow-md hover:bg-teal-700 transition duration-300 disabled:opacity-50" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.707-10.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 10-1.414-1.414L11 9.586V3a1 1 0 10-2 0v6.586L6.707 6.707z" clip-rule="evenodd"/></svg>
+                        Unduh Rekap (.csv)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPT MODULE UNTUK FIREBASE DAN LOGIC UTAMA -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Memuat Tone.js sebagai global
+        const Tone = window.Tone;
+
+        // --- 1. DATA KUIS ---
+        const quizData = [
+            // BAGIAN 1: Pilihan Ganda Biasa (Pilih 1 Jawaban Benar, Score 1) - 25 Soal
+            { id: 1, type: 'single', question: "Simbol Pancasila yang melambangkan sila 'Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan dalam Permusyawaratan/Perwakilan' adalah...", options: ["Pohon Beringin", "Kepala Banteng", "Padi dan Kapas", "Rantai Emas"], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 2, type: 'single', question: "Berikut adalah contoh pengamalan Sila Pertama di lingkungan sekolah, kecuali...", options: ["Berdoa sebelum memulai pelajaran.", "Menghormati teman yang sedang beribadah.", "Memaksa teman untuk mengikuti ajaran kita.", "Mengucapkan salam saat memasuki tempat ibadah."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 3, type: 'single', question: "Bunyi dari Sila Kedua Pancasila adalah...", options: ["Ketuhanan Yang Maha Esa.", "Persatuan Indonesia.", "Kemanusiaan yang Adil dan Beradab.", "Keadilan Sosial bagi Seluruh Rakyat Indonesia."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 4, type: 'single', question: "Makna dari simbol Rantai Emas adalah...", options: ["Persatuan Indonesia.", "Kekuatan Rakyat.", "Hubungan manusia yang saling membantu.", "Keberanian."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 5, type: 'single', question: "Contoh sikap adil di rumah yang sesuai dengan Sila Kelima adalah...", options: ["Mendapatkan porsi makanan yang paling banyak.", "Mendapat hak bermain yang lebih lama dari adik.", "Membagi waktu antara belajar, bermain, dan istirahat secara seimbang.", "Meminta hadiah setiap kali mendapat nilai bagus."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 6, type: 'single', question: "Jika ada teman di kelas yang berasal dari suku berbeda, sikap yang tepat sesuai Sila Ketiga adalah...", options: ["Mengolok-olok bahasanya.", "Menghindari pertemanan dengannya.", "Menghargai dan berteman tanpa membeda-bedakan.", "Hanya mau berteman dengan teman satu suku."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 7, type: 'single', question: "Penyelesaian masalah atau perbedaan pendapat melalui musyawarah merupakan pengamalan Sila...", options: ["Kedua", "Ketiga", "Keempat", "Kelima"], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 8, type: 'single', question: "Sikap yang menunjukkan rasa bangga terhadap bangsa Indonesia adalah...", options: ["Lebih memilih budaya asing.", "Mencintai dan menggunakan produk dalam negeri.", "Merusak fasilitas umum.", "Menghina adat istiadat suku lain."], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 9, type: 'single', question: "Tokoh yang menyampaikan usulan Pancasila pada tanggal 1 Juni 1945 dan diperingati sebagai Hari Lahir Pancasila adalah...", options: ["Mohammad Hatta", "Ir. Soekarno", "Soepomo", "Achmad Soebardjo"], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 10, type: 'single', question: "Sikap dari para perumus Pancasila yang harus kita contoh saat bermusyawarah adalah...", options: ["Memaksakan kehendak.", "Menerima semua usulan tanpa berpikir.", "Berlapang dada menerima kekalahan.", "Egois dalam mempertahankan pendapat."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 11, type: 'single', question: "Mengapa hak dan kewajiban harus dilaksanakan secara seimbang?", options: ["Agar kita mendapat lebih banyak hak.", "Agar tidak ada yang merasa dirugikan dan hidup menjadi teratur.", "Agar orang lain selalu menuruti kita.", "Agar kita terlihat lebih pintar dari teman lain."], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 12, type: 'single', question: "Yang termasuk Kewajiban seorang anak di rumah adalah...", options: ["Mendapat kasih sayang.", "Bermain dengan bebas.", "Belajar dengan giat.", "Mendapat perlindungan."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 13, type: 'single', question: "Contoh Hak seorang siswa di sekolah adalah...", options: ["Mendapat tugas piket.", "Menjaga kebersihan kelas.", "Mengikuti kegiatan belajar mengajar.", "Menghormati guru."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 14, type: 'single', question: "Dampak jika kita tidak melaksanakan kewajiban menjaga kebersihan kelas adalah...", options: ["Kelas menjadi nyaman.", "Kelas menjadi kotor dan banyak kuman.", "Guru memberikan nilai bagus.", "Belajar menjadi lebih fokus."], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 15, type: 'single', question: "Apa tujuan utama dari adanya aturan atau tata tertib di masyarakat?", options: ["Membatasi ruang gerak warga.", "Menghukum warga yang nakal.", "Menciptakan ketertiban dan keamanan.", "Membuat pekerjaan RT/RW menjadi mudah."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 16, type: 'single', question: "Tindakan yang benar saat melihat tetangga sedang kesusahan adalah...", options: ["Pura-pura tidak tahu.", "Menertawakannya.", "Membantunya sesuai kemampuan.", "Menyuruh orang lain untuk membantu."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 17, type: 'single', question: "Hak yang seharusnya didapatkan seorang warga di lingkungan tempat tinggalnya adalah...", options: ["Membuang sampah di mana saja.", "Mendapat lingkungan yang bersih dan aman.", "Membunyikan musik keras-keras di malam hari.", "Merusak fasilitas umum."], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 18, type: 'single', question: "Kewajiban setiap warga negara terhadap Bahasa Indonesia adalah...", options: ["Menggunakan bahasa daerah di setiap kesempatan.", "Membiarkan bahasa Indonesia punah.", "Melestarikan dan menggunakannya dengan baik dan benar.", "Menggunakan bahasa asing sebagai bahasa utama."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 19, type: 'single', question: "Contoh perilaku yang sesuai dengan Sila 'Persatuan Indonesia' di lingkungan rumah adalah...", options: ["Membantu adik mengerjakan PR.", "Berdoa bersama keluarga.", "Menyelesaikan tugas rumah tangga sendiri.", "Rukun dan tidak bertengkar dengan saudara."], correctAnswer: 'D', score: 1, maxScore: 1 },
+            { id: 20, type: 'single', question: "Alasan Pohon Beringin dijadikan lambang Sila Ketiga adalah karena...", options: ["Pohon Beringin adalah tanaman asli Indonesia.", "Pohon Beringin melambangkan tempat berteduh dan persatuan seluruh rakyat.", "Pohon Beringin adalah pohon yang paling tinggi.", "Pohon Beringin memiliki buah yang manis."], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 21, type: 'single', question: "Saat musyawarah, jika usulan kita tidak diterima, sikap yang harus kita lakukan adalah...", options: ["Marah dan meninggalkan ruangan.", "Menerima dengan lapang dada dan menghargai keputusan bersama.", "Memaksakan agar usulan kita yang dipakai.", "Menyalahkan orang lain yang tidak mendukung."], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 22, type: 'single', question: "Salah satu contoh tanggung jawab siswa di kelas adalah...", options: ["Membaca buku di perpustakaan.", "Mendapat nilai yang baik.", "Mengerjakan tugas individu tepat waktu.", "Mengambil rapor di akhir semester."], correctAnswer: 'C', score: 1, maxScore: 1 },
+            { id: 23, type: 'single', question: "Jika Anda menemukan fasilitas sekolah rusak, kewajiban Anda sebagai siswa adalah...", options: ["Mendiamkannya saja.", "Melaporkan kepada guru atau staf sekolah.", "Ikut merusaknya.", "Meminta teman lain untuk memperbaiki."], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 24, type: 'single', question: "Contoh Hak yang didapatkan anak dari orang tua adalah...", options: ["Mencuci piring setelah makan.", "Mendapat makanan bergizi dan pakaian yang layak.", "Membersihkan rumah setiap hari.", "Merawat hewan peliharaan."], correctAnswer: 'B', score: 1, maxScore: 1 },
+            { id: 25, type: 'single', question: "Perbedaan agama, suku, dan adat istiadat di Indonesia merupakan kekayaan bangsa yang harus kita...", options: ["Abaikan", "Musnahkan", "Hargai dan lestarikan", "Tiru semua"], correctAnswer: 'C', score: 1, maxScore: 1 },
+            
+            // BAGIAN 2: Pilihan Ganda Kompleks (Pilih 2 Jawaban Benar, Score 2) - 15 Soal
+            // Kunci jawaban menggunakan index 0, 1, 2, 3
+            { id: 26, type: 'complex', question: "Dua hal yang wajib kita laksanakan di rumah sebelum menuntut hak adalah...", options: ["Merapikan tempat tidur.", "Mendapat uang jajan.", "Membantu orang tua sesuai kemampuan.", "Bermain sepuasnya."], correctAnswer: [0, 2], score: 2, maxScore: 2 },
+            { id: 27, type: 'complex', question: "Dua sikap yang menunjukkan pengamalan Sila Kelima 'Keadilan Sosial' di lingkungan sekolah adalah...", options: ["Bersikap hemat dan tidak boros saat jajan.", "Membagi tugas kelompok secara adil.", "Menyumbang barang bekas yang masih layak pakai.", "Mengutamakan kepentingan pribadi di atas kepentingan kelas."], correctAnswer: [0, 1], score: 2, maxScore: 2 },
+            { id: 28, type: 'complex', question: "Dua tokoh yang merupakan bagian dari perumus naskah Pancasila adalah...", options: ["Ir. Soekarno", "Ki Hajar Dewantara", "Moh. Hatta", "Jenderal Sudirman"], correctAnswer: [0, 2], score: 2, maxScore: 2 },
+            { id: 29, type: 'complex', question: "Dua manfaat utama jika kita menaati semua peraturan di sekolah adalah...", options: ["Mendapat pujian dari kepala sekolah.", "Terciptanya suasana belajar yang tertib.", "Menghindari hukuman atau sanksi.", "Mendapat nilai 100."], correctAnswer: [1, 2], score: 2, maxScore: 2 },
+            { id: 30, type: 'complex', question: "Dua contoh tindakan yang sesuai dengan Sila Kedua 'Kemanusiaan yang Adil dan Beradab' adalah...", options: ["Menghina teman yang salah.", "Menjenguk teman yang sakit.", "Berbuat baik kepada semua orang.", "Membeda-bedakan teman."], correctAnswer: [1, 2], score: 2, maxScore: 2 },
+            { id: 31, type: 'complex', question: "Dua contoh Hak warga negara yang berkaitan dengan lingkungan hidup adalah...", options: ["Mendapat lingkungan yang bersih.", "Mendapat udara yang sehat.", "Membuang sampah ke sungai.", "Merusak fasilitas taman."], correctAnswer: [0, 1], score: 2, maxScore: 2 },
+            { id: 32, type: 'complex', question: "Dua tindakan yang mencerminkan rasa cinta tanah air (Sila Ketiga) adalah...", options: ["Menggunakan bahasa daerah di setiap tempat.", "Melestarikan budaya daerah.", "Mengibarkan bendera Merah Putih.", "Membanding-bandingkan suku."], correctAnswer: [1, 2], score: 2, maxScore: 2 },
+            { id: 33, type: 'complex', question: "Saat musyawarah, sikap yang harus dihindari agar mufakat tercapai adalah...", options: ["Memaksakan pendapat.", "Bersikap acuh tak acuh.", "Menyampaikan usulan dengan sopan.", "Mencatat hasil musyawarah."], correctAnswer: [0, 1], score: 2, maxScore: 2 },
+            { id: 34, type: 'complex', question: "Dua hal yang menjadi Kewajiban siswa di sekolah terkait fasilitas adalah...", options: ["Menggunakan fasilitas sesuai fungsinya.", "Menjaga kebersihan dan keutuhan fasilitas.", "Meminjam alat dari guru.", "Meminta fasilitas baru."], correctAnswer: [0, 1], score: 2, maxScore: 2 },
+            { id: 35, type: 'complex', question: "Dua contoh aturan yang berlaku di lingkungan masyarakat adalah...", options: ["Membayar iuran kas RT/RW.", "Datang tepat waktu ke sekolah.", "Melaksanakan kerja bakti.", "Mendapat nilai A di pelajaran."], correctAnswer: [0, 2], score: 2, maxScore: 2 },
+            { id: 36, type: 'complex', question: "Dua manfaat melaksanakan Hak dan Kewajiban secara seimbang adalah...", options: ["Hidup menjadi disiplin.", "Menghindari perselisihan.", "Semua permintaan terpenuhi.", "Tidak perlu lagi ada aturan."], correctAnswer: [0, 1], score: 2, maxScore: 2 },
+            { id: 37, type: 'complex', question: "Dua contoh perilaku yang menunjukkan ketidakadilan (tidak sesuai Sila Kelima) adalah...", options: ["Memberikan hukuman yang setimpal.", "Memilih-milih teman berdasarkan kekayaan.", "Meminta hak tanpa melaksanakan kewajiban.", "Membagi makanan dengan rata."], correctAnswer: [1, 2], score: 2, maxScore: 2 },
+            { id: 38, type: 'complex', question: "Dua sikap yang harus dimiliki oleh para pemimpin atau perwakilan rakyat (Sila Keempat) adalah...", options: ["Mementingkan diri sendiri.", "Bersikap bijaksana.", "Mengutamakan kepentingan bersama.", "Tidak mau menerima kritik."], correctAnswer: [1, 2], score: 2, maxScore: 2 },
+            { id: 39, type: 'complex', question: "Dua akibat jika kita sering menunda-nunda Kewajiban di rumah adalah...", options: ["Pekerjaan menumpuk.", "Rumah menjadi berantakan.", "Mendapat hadiah dari orang tua.", "Semua kewajiban selesai tepat waktu."], correctAnswer: [0, 1], score: 2, maxScore: 2 },
+            { id: 40, type: 'complex', question: "Dua tindakan yang mencerminkan Sila Pertama 'Ketuhanan Yang Maha Esa' adalah...", options: ["Melaksanakan ibadah sesuai ajaran agama.", "Menciptakan kerukunan antarumat beragama.", "Menjaga kebersihan lingkungan.", "Mencintai produk Indonesia."], correctAnswer: [0, 1], score: 2, maxScore: 2 },
+
+            // BAGIAN 3: Benar/Salah (Pilih Benar atau Salah, Score 1) - 10 Soal
+            { id: 41, type: 'true_false', question: "Burung Garuda yang menoleh ke kiri melambangkan bahwa Indonesia siap menerima tantangan dari negara lain.", correctAnswer: 'Salah', score: 1, maxScore: 1 },
+            { id: 42, type: 'true_false', question: "Sila Ketiga, Persatuan Indonesia, dilambangkan dengan Padi dan Kapas.", correctAnswer: 'Salah', score: 1, maxScore: 1 },
+            { id: 43, type: 'true_false', question: "Mengucapkan terima kasih saat mendapat bantuan adalah penerapan dari nilai Sila Kedua.", correctAnswer: 'Benar', score: 1, maxScore: 1 },
+            { id: 44, type: 'true_false', question: "Hak harus selalu didahulukan daripada Kewajiban, agar kita tidak rugi.", correctAnswer: 'Salah', score: 1, maxScore: 1 },
+            { id: 45, type: 'true_false', question: "Salah satu contoh Hak di sekolah adalah mendapat perlakuan adil dari guru dan teman.", correctAnswer: 'Benar', score: 1, maxScore: 1 },
+            { id: 46, type: 'true_false', question: "Ir. Soekarno dikenal sebagai Bapak Proklamator sekaligus tokoh penting perumus Pancasila.", correctAnswer: 'Benar', score: 1, maxScore: 1 },
+            { id: 47, type: 'true_false', question: "Tanggung jawab adalah segala sesuatu yang harus dilakukan dengan sungguh-sungguh.", correctAnswer: 'Benar', score: 1, maxScore: 1 },
+            { id: 48, type: 'true_false', question: "Jika kita tidak melaksanakan kewajiban, kita tetap bisa menuntut Hak kita.", correctAnswer: 'Salah', score: 1, maxScore: 1 },
+            { id: 49, type: 'true_false', question: "Mufakat adalah hasil keputusan bersama yang disetujui setelah melalui musyawarah.", correctAnswer: 'Benar', score: 1, maxScore: 1 },
+            { id: 50, type: 'true_false', question: "Menggunakan Bahasa Indonesia yang baik dan benar merupakan kewajiban kita sebagai warga negara.", correctAnswer: 'Benar', score: 1, maxScore: 1 },
+        ];
+
+        const MAX_TOTAL_SCORE = quizData.reduce((sum, q) => sum + q.maxScore, 0);
+
+        // --- 2. FIREBASE SETUP ---
+        let db, auth, appId, userId;
+        const FIREBASE_COLLECTION_NAME = 'quiz_scores';
+
+        // Fungsi untuk menginisialisasi Firebase dan Autentikasi
+        async function initFirebase() {
+            try {
+                // Konfigurasi wajib dari environment
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+                if (Object.keys(firebaseConfig).length === 0) {
+                     console.warn("Konfigurasi Firebase hilang. Nilai tidak dapat disimpan.");
+                     return;
+                }
+
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                // Login menggunakan token khusus atau secara anonim
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+                console.log("Firebase terinisialisasi. User ID:", userId);
+
+            } catch (error) {
+                console.error("Gagal menginisialisasi Firebase:", error);
+                showCustomMessage("Error Database", "Gagal koneksi ke database. Nilai mungkin tidak tersimpan.", 'red');
+            }
+        }
+
+        // --- 3. TIMER (HITUNG MUNDUR) LOGIC ---
+        const TOTAL_TIME_MINUTES = 90;
+        let timeRemainingSeconds = TOTAL_TIME_MINUTES * 60;
+        let timerInterval;
+        let quizStarted = false;
+
+        const timerDisplay = document.getElementById('timerDisplay');
+        const submitButton = document.getElementById('submitQuiz');
+        const synth = new Tone.Synth().toDestination(); 
+        const startButtonContainer = document.getElementById('startQuizContainer');
+        const quizForm = document.getElementById('quizForm');
+        const timerContainer = document.getElementById('timerContainer');
+        const studentNameInput = document.getElementById('studentName');
+        const absentNumberInput = document.getElementById('absentNumber');
+        const instructionSection = document.getElementById('instructionSection'); 
+        
+        // Fungsi untuk format waktu menjadi MM:SS
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+
+        // Fungsi untuk memperbarui tampilan timer
+        function updateTimerDisplay() {
+            if (!quizStarted) return;
+
+            timerDisplay.textContent = formatTime(timeRemainingSeconds);
+
+            // Beri peringatan visual (warna merah dan animasi) di 5 menit terakhir
+            if (timeRemainingSeconds <= 5 * 60) {
+                timerDisplay.classList.add('low-time');
+            } else {
+                timerDisplay.classList.remove('low-time');
+            }
+
+            if (timeRemainingSeconds <= 0) {
+                clearInterval(timerInterval);
+                handleTimeUp();
+                return;
+            }
+
+            timeRemainingSeconds--;
+        }
+
+        // Fungsi yang dipanggil saat waktu habis
+        function handleTimeUp() {
+            quizStarted = false; 
+            
+            const inputs = document.querySelectorAll('#quizForm input');
+            inputs.forEach(input => input.disabled = true);
+
+            submitButton.disabled = true;
+            submitButton.textContent = "Waktu Habis! Mengirim Jawaban Otomatis...";
+            submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+            submitButton.classList.add('bg-red-700', 'cursor-not-allowed');
+            
+            showCustomMessage("Waktu Habis", "Waktu pengerjaan 90 menit telah berakhir. Jawaban Anda akan otomatis dinilai.", 'red');
+            
+            setTimeout(() => {
+                document.getElementById('resultMessage').innerHTML = `
+                    <p class="text-xl font-bold text-red-700">WAKTU HABIS! Jawaban otomatis dinilai.</p>
+                `;
+                calculateAndDisplayResults(studentNameInput.value.trim(), absentNumberInput.value.trim());
+            }, 2000);
+        }
+
+        // Fungsi untuk memulai kuis saat tombol 'Mulai' diklik
+        window.startQuiz = function() {
+            const studentName = studentNameInput.value.trim();
+            const absentNumber = absentNumberInput.value.trim();
+
+            if (!studentName || !absentNumber) {
+                showCustomMessage("Peringatan", "Mohon masukkan Nama Siswa dan Nomor Absen sebelum memulai kuis.", 'red');
+                return;
+            }
+
+            if (Tone.context.state !== 'running') {
+                Tone.context.resume();
+            }
+
+            startButtonContainer.classList.add('hidden');
+            instructionSection.classList.add('hidden');
+            quizForm.classList.remove('hidden');
+            timerContainer.classList.remove('hidden');
+
+            studentNameInput.disabled = true;
+            absentNumberInput.disabled = true;
+
+            quizStarted = true;
+            timerInterval = setInterval(updateTimerDisplay, 1000);
+            updateTimerDisplay();
+        }
+
+        // --- 4. SOUND WARNING LOGIC (TONE.JS) ---
+        function playWarningSound() {
+            try {
+                synth.triggerAttackRelease("C4", "8n"); 
+            } catch (e) {
+                console.error("Gagal memutar suara: ", e);
+            }
+        }
+
+        // --- 5. RENDER DAN SUBMIT KUIS LOGIC ---
+
+        function renderQuiz() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            
+            let html = '';
+            let currentSection = '';
+
+            quizData.forEach((q, index) => {
+                // ... (Rendering logic remains the same as previous version)
+                const sectionMap = {
+                    'single': '1. Pilihan Ganda Biasa (Pilih 1 Jawaban Benar - Skor Max 1)',
+                    'complex': '2. Pilihan Ganda Kompleks (Pilih 2 Jawaban Benar - Skor Max 2)',
+                    'true_false': '3. Benar/Salah (Pilih 1 Jawaban Benar - Skor Max 1)'
+                };
+
+                if (sectionMap[q.type] !== currentSection) {
+                    currentSection = sectionMap[q.type];
+                    html += `<h3 class="text-2xl font-bold text-gray-800 border-b-2 border-blue-500 pb-2 mt-8 mb-6">${currentSection}</h3>`;
+                }
+
+                html += `
+                    <div id="q-${q.id}" class="question-card bg-gray-50 p-5 rounded-xl shadow-sm transition duration-300 hover:shadow-md">
+                        <p class="font-semibold text-lg text-gray-800 mb-3"><span class="text-blue-600 mr-2">${q.id}.</span> ${q.question}</p>
+                `;
+
+                if (q.type === 'single') {
+                    const optionLabels = ['A', 'B', 'C', 'D'];
+                    q.options.forEach((option, i) => {
+                        html += `
+                            <label class="block p-3 cursor-pointer hover:bg-white rounded-lg transition duration-150">
+                                <input type="radio" name="answer-${q.id}" value="${optionLabels[i]}" class="custom-control text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-gray-700 font-medium">${optionLabels[i]}. ${option}</span>
+                            </label>
+                        `;
+                    });
+                } else if (q.type === 'complex') {
+                    q.options.forEach((option, i) => {
+                        html += `
+                            <label class="block p-3 cursor-pointer hover:bg-white rounded-lg transition duration-150">
+                                <input type="checkbox" name="answer-${q.id}" value="${i}" class="custom-control text-green-600 rounded focus:ring-green-500">
+                                <span class="ml-2 text-gray-700 font-medium">${option}</span>
+                            </label>
+                        `;
+                    });
+                     html += `<p class="text-sm text-red-500 mt-2 font-medium">(Centang DUA jawaban yang benar)</p>`;
+                } else if (q.type === 'true_false') {
+                    html += `
+                        <label class="block p-3 cursor-pointer hover:bg-green-100 rounded-lg transition duration-150">
+                            <input type="radio" name="answer-${q.id}" value="Benar" class="custom-control text-green-600 focus:ring-green-500">
+                            <span class="ml-2 text-gray-700 font-medium">Benar</span>
+                        </label>
+                        <label class="block p-3 cursor-pointer hover:bg-red-100 rounded-lg transition duration-150">
+                            <input type="radio" name="answer-${q.id}" value="Salah" class="custom-control text-red-600 focus:ring-red-500">
+                            <span class="ml-2 text-gray-700 font-medium">Salah</span>
+                        </label>
+                    `;
+                }
+                
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Fungsi untuk mencari soal yang belum dijawab
+        function checkUnansweredQuestions() {
+            const unanswered = [];
+            quizData.forEach(q => {
+                let isAnswered = false;
+                
+                if (q.type === 'single' || q.type === 'true_false') {
+                    const selected = document.querySelector(`input[name="answer-${q.id}"]:checked`);
+                    if (selected) {
+                        isAnswered = true;
+                    }
+                } else if (q.type === 'complex') {
+                    const selectedOptions = document.querySelectorAll(`input[name="answer-${q.id}"]:checked`);
+                    if (selectedOptions.length > 0) {
+                        isAnswered = true;
+                    }
+                }
+
+                if (!isAnswered) {
+                    unanswered.push(q.id);
+                }
+            });
+            return unanswered;
+        }
+
+        // Fungsi untuk submit kuis
+        window.submitQuiz = function() {
+            if (!quizStarted) {
+                showCustomMessage("Peringatan", "Kuis belum dimulai. Silakan klik tombol 'MULAI MENGERJAKAN SOAL' terlebih dahulu.", 'red');
+                return;
+            }
+
+            const studentName = studentNameInput.value.trim();
+            const absentNumber = absentNumberInput.value.trim();
+            
+            const unanswered = checkUnansweredQuestions();
+            const warningDiv = document.getElementById('unansweredWarningDiv');
+            const unansweredList = document.getElementById('unansweredList');
+            
+            if (unanswered.length > 0) {
+                warningDiv.classList.remove('hidden');
+                unansweredList.textContent = unanswered.join(', ');
+                playWarningSound();
+                document.getElementById(`q-${unanswered[0]}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+
+            warningDiv.classList.add('hidden');
+            
+            clearInterval(timerInterval);
+            quizStarted = false; 
+
+            calculateAndDisplayResults(studentName, absentNumber);
+        }
+        
+        // Fungsi terpisah untuk menghitung dan menampilkan hasil
+        async function calculateAndDisplayResults(studentName, absentNumber) {
+            let totalScore = 0;
+            const reviewHtml = [];
+            const timeTaken = (TOTAL_TIME_MINUTES * 60) - timeRemainingSeconds;
+
+            quizData.forEach(q => {
+                // ... (Scoring logic remains the same as previous version)
+                 let userScore = 0;
+                let userAnswerDisplay = '';
+                let isCorrect = false;
+                let correctAnswerText = '';
+
+                if (q.type === 'single') {
+                    const selected = document.querySelector(`input[name="answer-${q.id}"]:checked`);
+                    const userAnswer = selected ? selected.value : null;
+                    correctAnswerText = `${q.correctAnswer}. ${q.options['ABCD'.indexOf(q.correctAnswer)]}`;
+                    userAnswerDisplay = userAnswer ? `${userAnswer}. ${q.options['ABCD'.indexOf(userAnswer)]}` : 'Tidak dijawab';
+
+                    if (userAnswer === q.correctAnswer) {
+                        userScore = 1;
+                        isCorrect = true;
+                    }
+                } else if (q.type === 'complex') {
+                    const selectedOptions = Array.from(document.querySelectorAll(`input[name="answer-${q.id}"]:checked`)).map(cb => parseInt(cb.value));
+                    
+                    const correctSorted = q.correctAnswer.sort((a, b) => a - b);
+                    const userSorted = selectedOptions.sort((a, b) => a - b);
+
+                    let correctCount = 0;
+                    let wrongCount = 0;
+                    
+                    correctSorted.forEach(correctIndex => {
+                        if (userSorted.includes(correctIndex)) {
+                            correctCount++;
+                        }
+                    });
+
+                    userSorted.forEach(userIndex => {
+                        if (!correctSorted.includes(userIndex)) {
+                            wrongCount++;
+                        }
+                    });
+                    
+                    if (correctCount === 2 && wrongCount === 0) {
+                        userScore = 2; 
+                        isCorrect = true;
+                    } else if (correctCount === 1 && wrongCount === 0) {
+                        userScore = 1;
+                    } else if (correctCount === 2 && wrongCount > 0) {
+                        userScore = 1;
+                    } else {
+                        userScore = 0;
+                    }
+
+                    userAnswerDisplay = userSorted.length > 0 
+                        ? userSorted.map(i => q.options[i]).join(', ') 
+                        : 'Tidak dijawab';
+                    
+                    correctAnswerText = q.correctAnswer.map(i => q.options[i]).join(' dan ');
+
+                } else if (q.type === 'true_false') {
+                    const selected = document.querySelector(`input[name="answer-${q.id}"]:checked`);
+                    const userAnswer = selected ? selected.value : null;
+                    correctAnswerText = q.correctAnswer;
+                    userAnswerDisplay = userAnswer || 'Tidak dijawab';
+
+                    if (userAnswer === q.correctAnswer) {
+                        userScore = q.score;
+                        isCorrect = true;
+                    }
+                }
+                
+                totalScore += userScore;
+                
+                reviewHtml.push(`
+                    <div class="p-4 rounded-lg ${isCorrect ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}">
+                        <p class="font-semibold text-gray-800">${q.id}. ${q.question}</p>
+                        <p class="mt-1 text-sm ${isCorrect ? 'text-green-700' : 'text-red-700'}">Jawaban Anda: <span class="font-medium">${userAnswerDisplay}</span></p>
+                        <p class="text-sm text-blue-700">Kunci Jawaban: <span class="font-medium">${correctAnswerText}</span></p>
+                        <p class="text-xs text-gray-600">Skor Anda: ${userScore}/${q.maxScore}</p>
+                    </div>
+                `);
+            });
+
+            const finalGradeValue = (totalScore / MAX_TOTAL_SCORE) * 100;
+
+            document.getElementById('quizForm').classList.add('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
+            
+            document.getElementById('resultName').textContent = studentName || 'N/A';
+            document.getElementById('resultAbsent').textContent = absentNumber || 'N/A';
+            document.getElementById('totalScoreDisplay').textContent = totalScore;
+            document.getElementById('finalGrade').textContent = `Nilai Akhir (Skala 100): ${finalGradeValue.toFixed(2)}`;
+            document.getElementById('answerReview').innerHTML = reviewHtml.join('');
+            document.getElementById('resultUserId').textContent = userId; // Tampilkan User ID
+
+            // --- SIMPAN HASIL KE FIRESTORE ---
+            if (db && userId) {
+                try {
+                    const scoreRecord = {
+                        studentName: studentName,
+                        absentNumber: absentNumber,
+                        score: totalScore,
+                        maxScore: MAX_TOTAL_SCORE,
+                        grade: parseFloat(finalGradeValue.toFixed(2)),
+                        timeTakenSeconds: timeTaken,
+                        timestamp: Timestamp.now(),
+                        userId: userId,
+                        appId: appId
+                    };
+
+                    const scoreCollectionRef = collection(db, `artifacts/${appId}/public/data/${FIREBASE_COLLECTION_NAME}`);
+                    await addDoc(scoreCollectionRef, scoreRecord);
+                    console.log("Nilai berhasil disimpan ke Firestore.");
+                    // Opsional: Perbarui pesan sukses dengan notifikasi penyimpanan
+                } catch (e) {
+                    console.error("Gagal menyimpan nilai ke Firestore:", e);
+                    showCustomMessage("Peringatan Penyimpanan", "Nilai Anda telah dihitung, namun gagal disimpan ke database. Harap catat skor Anda.", 'red');
+                }
+            }
+        }
+        
+        // --- 6. REKAP & EXPORT LOGIC ---
+
+        let cachedScoreData = []; // Cache data rekap
+
+        // Fungsi untuk mengambil dan menampilkan data rekap
+        window.openScoreRekap = async function() {
+            const modal = document.getElementById('rekapModal');
+            const tableBody = document.getElementById('rekapTableBody');
+            const dataInfo = document.getElementById('rekapDataInfo');
+            const exportButton = document.getElementById('exportCsvButton');
+
+            if (!db) {
+                showCustomMessage("Akses Database", "Database belum siap. Coba lagi sebentar.", 'red');
+                return;
+            }
+            
+            modal.classList.remove('hidden');
+            tableBody.innerHTML = '';
+            dataInfo.textContent = 'Memuat data... Mohon tunggu.';
+            exportButton.disabled = true;
+
+            try {
+                const scoreCollectionRef = collection(db, `artifacts/${appId}/public/data/${FIREBASE_COLLECTION_NAME}`);
+                // Ambil data, urutkan berdasarkan waktu pengerjaan terbaru
+                const q = query(scoreCollectionRef, orderBy('timestamp', 'desc'));
+                const querySnapshot = await getDocs(q);
+
+                cachedScoreData = [];
+                let html = '';
+                let index = 1;
+
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Konversi Timestamp ke format tanggal/waktu lokal yang mudah dibaca
+                    const date = data.timestamp ? data.timestamp.toDate().toLocaleString('id-ID', {
+                        day: '2-digit', month: 'short', year: 'numeric', 
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    }) : 'N/A';
+                    
+                    const timeTakenFormatted = formatTime(data.timeTakenSeconds || 0);
+
+                    cachedScoreData.push({ // Simpan untuk ekspor
+                        No: index,
+                        Waktu_Selesai: date,
+                        No_Absen: data.absentNumber || '-',
+                        Nama_Siswa: data.studentName || 'Anonim',
+                        Skor_Total: data.score || 0,
+                        Nilai_Akhir: data.grade || 0,
+                        Waktu_Pengerjaan: timeTakenFormatted
+                    });
+
+                    html += `
+                        <tr class="hover:bg-gray-100">
+                            <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">${index}</td>
+                            <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">${date}</td>
+                            <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">${data.absentNumber || '-'}</td>
+                            <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">${data.studentName || 'Anonim'}</td>
+                            <td class="px-3 py-3 whitespace-nowrap text-sm font-bold text-red-600">${data.score || 0}</td>
+                            <td class="px-3 py-3 whitespace-nowrap text-sm font-bold text-blue-600">${(data.grade || 0).toFixed(2)}</td>
+                        </tr>
+                    `;
+                    index++;
+                });
+
+                tableBody.innerHTML = html;
+                dataInfo.textContent = `Total ${cachedScoreData.length} data nilai ditemukan. (Diurutkan dari terbaru)`;
+                exportButton.disabled = cachedScoreData.length === 0;
+
+            } catch (e) {
+                console.error("Gagal mengambil data rekap:", e);
+                dataInfo.textContent = `ERROR: Gagal mengambil data dari database. ${e.message}`;
+                showCustomMessage("Error Rekap", "Gagal mengambil data rekap. Pastikan koneksi database aktif.", 'red');
+            }
+        }
+
+        // Fungsi untuk mengkonversi data ke CSV dan mengunduh
+        window.exportToCSV = function() {
+            if (cachedScoreData.length === 0) {
+                showCustomMessage("Peringatan", "Tidak ada data untuk diekspor.", 'red');
+                return;
+            }
+
+            // Dapatkan header kolom dari kunci objek data pertama
+            const headers = Object.keys(cachedScoreData[0]);
+            
+            // Konversi data ke string CSV
+            let csvContent = headers.join(";") + "\n"; // Gunakan semicolon (;) sebagai pemisah untuk kompatibilitas Excel Indonesia
+            
+            cachedScoreData.forEach(row => {
+                const values = headers.map(header => {
+                    const value = row[header] === undefined ? '' : row[header];
+                    // Bungkus nilai yang mengandung koma atau semicolon dengan tanda kutip ganda
+                    return typeof value === 'string' && (value.includes(';') || value.includes(',')) 
+                        ? `"${value.replace(/"/g, '""')}"` 
+                        : value;
+                });
+                csvContent += values.join(";") + "\n";
+            });
+
+            // Buat Blob dan link download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            // Format nama file
+            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            link.setAttribute('href', URL.createObjectURL(blob));
+            link.setAttribute('download', `Rekap_Nilai_PKn_IV_${today}.csv`);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showCustomMessage("Sukses", "Data rekap berhasil diunduh sebagai file CSV!");
+        }
+
+
+        // FUNGSI: Mencetak Hasil ke PDF (sudah ada)
+        window.printResults = function() {
+            window.print();
+        }
+
+        // FUNGSI: Kirim Link Soal (sudah ada)
+        window.shareLink = function() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Soal Asesmen PKn Kelas 4 SD',
+                    text: 'Yuk, coba kerjakan Soal Assesmen Sumatif Akhir Semester 1 ini!',
+                    url: window.location.href 
+                })
+                .then(() => showCustomMessage("Berhasil", "Link berhasil dikirim!"))
+                .catch((error) => console.log('Gagal berbagi: ', error));
+            } else {
+                const url = window.location.href;
+                const el = document.createElement('textarea');
+                el.value = `Soal Asesmen PKn Kelas IV (2025/2026)\nLink: ${url}`;
+                document.body.appendChild(el);
+                el.select();
+                try {
+                    document.execCommand('copy');
+                    showCustomMessage("Link Disalin", `Link soal telah disalin ke clipboard Anda!`);
+                } catch (err) {
+                    showCustomMessage("Link Soal", `Fitur salin otomatis gagal. Salin tautan ini secara manual: ${url}`);
+                }
+                document.body.removeChild(el);
+            }
+        }
+
+        // Fungsi untuk menampilkan pesan custom (mengganti alert)
+        function showCustomMessage(title, message, color = 'blue') {
+            const existingModal = document.getElementById('customModal');
+            if (existingModal) existingModal.remove();
+            
+            let titleClass = 'text-blue-600';
+            let buttonClass = 'bg-blue-600 hover:bg-blue-700';
+
+            if (color === 'red' || title.includes("Peringatan") || title.includes("Error")) {
+                 titleClass = 'text-red-600';
+                 buttonClass = 'bg-red-600 hover:bg-red-700';
+            }
+
+            const modalHtml = `
+                <div id="customModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+                        <h4 class="text-xl font-bold ${titleClass} mb-4">${title}</h4>
+                        <p class="text-gray-700 mb-6">${message}</p>
+                        <button onclick="document.getElementById('customModal').remove()" class="w-full py-2 text-white font-bold rounded-lg transition duration-200 ${buttonClass}">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        // Memanggil fungsi render saat halaman dimuat (timer BELUM dimulai)
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuiz();
+            initFirebase(); // Inisialisasi Firebase saat DOM siap
+        });
+    </script>
+</body>
+</html>
